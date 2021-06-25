@@ -178,7 +178,19 @@ open class TechWorkloadUserClient(
      * @throws PermissionException If the user is not logged in.
      * @throws IllegalArgumentException If a message with the given [id] does not exist
      */
-    fun deleteMessage(id: String): CompletableFuture<Unit> = TODO("Implement me!")
+    fun deleteMessage(id: String): CompletableFuture<Unit> {
+        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
+            if (!isLoggedIn)
+                throw PermissionException()
+            else
+                inboxManager.isMsgWithIdExist(username, id).thenCompose { isMsgWithIdExist ->
+                    if (!isMsgWithIdExist)
+                        throw IllegalArgumentException()
+                    else
+                        inboxManager.deleteMsg(username, id)
+                }
+        }
+    }
 }
 
 class TechWorkloadAdminClient(

@@ -14,7 +14,8 @@ class DbInboxHandler @Inject constructor(databaseFactory: StorageFactoryImpl, te
         const val sizeKey = "size"
     }
     private val dbAccessRequests by lazy { databaseFactory.open(DbDirectoriesPaths.Inbox, PairSerializerImpl()) }
-    fun addMessage(from: String, to: String, message: String) :CompletableFuture<Unit> {
+
+    fun addMessage(from: String, to: String, message: String) : CompletableFuture<Unit> {
         return dbAccessRequests.thenCompose { storage ->
             storage.read(to + separatorKey + sizeKey).thenCompose { size ->
                 val serialNumber: Int = size?.first?.toInt() ?: 0
@@ -25,5 +26,15 @@ class DbInboxHandler @Inject constructor(databaseFactory: StorageFactoryImpl, te
         }
     }
 
+    fun getMessagePairById(to: String, id: String): CompletableFuture<Pair<String, String>?> {
+        return dbAccessRequests.thenCompose { storage ->
+            storage.read(to + separatorKey + id)
+        }
+    }
 
+    fun deleteMsg(username: String, id: String) : CompletableFuture<Unit>  {
+        return dbAccessRequests.thenCompose { storage ->
+            storage.delete(username + separatorKey + id).thenApply {}
+        }
+    }
 }
