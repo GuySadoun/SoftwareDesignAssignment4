@@ -34,12 +34,25 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactoryImpl
         return dbUsernameToLoginStateHandler.thenCompose { storage ->
             storage.write(username + UsernameToIsLoggedIn, loggedInSymbol)
                 .thenCompose {
-                    storage.read(SerialToLoggedInUsernameSuffix + DbRequestAccessHandler.sizeKey).thenCompose { size ->
-                        val serialNumber: Int = size?.toInt() ?: 0
-                        storage.write(
-                            serialNumber.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(),
-                            loggedInSymbol
-                        )
+                    storage.read(username + UsernameToSerialNumber).thenCompose { serial ->
+                        if (serial == null) {
+                            storage.read(SerialToLoggedInUsernameSuffix + sizeKey)
+                                .thenCompose { size ->
+                                    val serialNumber: Int = size?.toInt() ?: 0
+                                    storage.write(
+                                        serialNumber.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(),
+                                        username
+                                    ).thenCompose {
+                                        storage.write(SerialToLoggedInUsernameSuffix + sizeKey,
+                                            (serialNumber + 1).toString())
+                                    }
+                                }
+                        } else {
+                            storage.write(
+                                serial.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(),
+                                username
+                            )
+                        }
                     }
                 }
         }
@@ -56,6 +69,12 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactoryImpl
                         }
                 }
 
+        }
+    }
+
+    fun getNumberOfOnlineUsers(): CompletableFuture<Int> {
+        return dbUsernameToLoginStateHandler.thenCompose { storage ->
+            storage.read(SerialToLoggedInUsernameSuffix + sizeKey).thenApply { size -> size?.toInt() ?: 0 }
         }
     }
 }
