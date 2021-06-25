@@ -1,5 +1,8 @@
 package il.ac.technion.cs.softwaredesign.Services
 
+import com.google.common.collect.ImmutableList
+import il.ac.technion.cs.softwaredesign.Inbox
+import il.ac.technion.cs.softwaredesign.Message
 import il.ac.technion.cs.softwaredesign.Services.Database.DbInboxHandler
 import java.util.concurrent.CompletableFuture
 
@@ -9,10 +12,39 @@ class InboxManager(private val dbInboxHandler: DbInboxHandler) {
     }
 
     fun isMsgWithIdExist(to: String, id: String) : CompletableFuture<Boolean> {
-        return dbInboxHandler.getMessagePairById(to, id).thenApply { it == null }
+        return dbInboxHandler.getMessageById(to, id).thenApply { it == null }
     }
 
     fun deleteMsg(username: String, id: String) : CompletableFuture<Unit> {
         return dbInboxHandler.deleteMsg(username, id)
+    }
+
+    fun getUserInbox(username: String): CompletableFuture<Inbox> {
+        return getMessagesOfUser(username).thenApply { messagesList ->
+            messagesList.groupBy { x -> x.fromUser}
+        }
+    }
+
+    private fun getMessagesOfUser(username: String): CompletableFuture<List<Message>> {
+        val messagesList = mutableListOf<Message>()
+        var listCompletable = CompletableFuture.completedFuture(messagesList)
+
+        return dbInboxHandler.getNumberOfMessages(username)
+            .thenCompose { numberOfMessages ->
+                for (i in 0 until numberOfMessages) {
+                    listCompletable = listCompletable
+                        .thenCompose {
+                            dbInboxHandler.getMessageById(username, i.toString()).thenApply { message ->
+                                if (message != null){
+                                    messagesList.add(message)
+                                    messagesList
+                                } else {
+                                    messagesList
+                                }
+                            }
+                        }
+                }
+                listCompletable
+            }.thenApply { mutableList -> ImmutableList.copyOf(mutableList) }
     }
 }
