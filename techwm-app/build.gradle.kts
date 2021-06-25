@@ -10,8 +10,12 @@ val junitVersion: String? by extra
 val hamkrestVersion: String? by extra
 val guiceVersion: String? by extra
 val kotlinGuiceVersion: String? by extra
+val externalLibraryVersion: String? by extra
+val executionServiceVersion: String? by extra
+
 
 dependencies {
+    implementation("il.ac.technion.cs.softwaredesign", "primitive-storage-layer", externalLibraryVersion)
     implementation(project(":library"))
 
     implementation("com.google.inject", "guice", guiceVersion)

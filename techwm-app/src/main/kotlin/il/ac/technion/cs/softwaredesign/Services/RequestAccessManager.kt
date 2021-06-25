@@ -3,12 +3,14 @@ package il.ac.technion.cs.softwaredesign.services
 import com.google.common.collect.ImmutableList
 import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.AccessRequest
+import il.ac.technion.cs.softwaredesign.AccessRequestImpl
+import il.ac.technion.cs.softwaredesign.AccessRequestWithPassword
 import il.ac.technion.cs.softwaredesign.services.database.DbRequestAccessHandler
 import java.util.concurrent.CompletableFuture
 
 class RequestAccessManager @Inject constructor(private val dbRequestAccessHandler: DbRequestAccessHandler) {
 
-    fun addAccessRequest(request: AccessRequest): CompletableFuture<Unit>{
+    fun addAccessRequest(request: AccessRequestWithPassword): CompletableFuture<Unit>{
         return dbRequestAccessHandler.addRequest(request)
     }
 

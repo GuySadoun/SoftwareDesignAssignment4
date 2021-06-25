@@ -3,6 +3,7 @@ package il.ac.technion.cs.softwaredesign.services.database
 import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.AccessRequest
 import il.ac.technion.cs.softwaredesign.AccessRequestImpl
+import il.ac.technion.cs.softwaredesign.AccessRequestWithPassword
 import main.kotlin.SerializerImpl
 import main.kotlin.StorageFactoryImpl
 import java.util.concurrent.CompletableFuture
@@ -12,6 +13,7 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
         const val serialNumberToUsername = "_serialToUsername"
         const val serialNumberToIsActiveSuffix = "_serialToIsActive"
         const val usernameToReasonSuffix = "_usernameToReason"
+        const val usernameToPasswordSuffix = "_usernameToPassword"
         const val usernameToSerialNumberSuffix = "_usernameToSerial"
 
         const val nonEmptyPrefix = "_"
@@ -19,9 +21,9 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
     }
     private val dbAccessRequests by lazy { databaseFactory.open(DbDirectoriesPaths.AccessRequests, SerializerImpl()) }
 
-    fun addRequest(request: AccessRequest): CompletableFuture<Unit>{
-        return getRequestByUsername(request.requestingUsername).thenApply { alreadyExistsRequest ->
-            if (alreadyExistsRequest != null) {
+    fun addRequest(request: AccessRequestWithPassword): CompletableFuture<Unit>{
+        return isRequestForUsernameExists(request.requestingUsername).thenApply { alreadyExistsRequest ->
+            if (alreadyExistsRequest) {
                 throw IllegalArgumentException()
             }
         }.thenCompose {
@@ -38,13 +40,15 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
                             storage.write(request.requestingUsername + usernameToSerialNumberSuffix, serialNumber.toString())
                         }.thenCompose {
                             storage.write(serialNumber.toString() + serialNumberToIsActiveSuffix, "1")
+                        }.thenCompose {
+                            storage.write(request.requestingUsername + usernameToPasswordSuffix, request.password)
                         }
                 }
             }
         }
     }
 
-    fun getRequestByUsername(username: String): CompletableFuture<AccessRequest?> {
+    private fun getRequestByUsername(username: String): CompletableFuture<AccessRequest?> {
         return dbAccessRequests.thenCompose { storage ->
             storage.read(username + usernameToReasonSuffix).thenApply { it?.drop(nonEmptyPrefix.length) }
         }.thenApply { reason ->

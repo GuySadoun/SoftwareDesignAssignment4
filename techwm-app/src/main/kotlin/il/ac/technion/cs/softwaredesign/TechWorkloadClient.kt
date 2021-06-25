@@ -1,5 +1,7 @@
 package il.ac.technion.cs.softwaredesign
 
+import il.ac.technion.cs.softwaredesign.Services.UserLoginManager
+import il.ac.technion.cs.softwaredesign.services.RequestAccessManager
 import java.util.concurrent.CompletableFuture
 
 /**
@@ -31,7 +33,12 @@ interface AccessRequest {
 /**
  * This is the main class implementing TechWM Clients, the client layer interacting with the TechWM application.
  */
-open class TechWorkloadUserClient {
+open class TechWorkloadUserClient(
+    private val username : String,
+    private val techWM : TechWorkloadManager,
+    private val userManager: UserLoginManager,
+    private val requestManager: RequestAccessManager) {
+    private var connectedToken : String? = null
     /**
      * Login with a given password. A successfully logged-in user is considered "online". If the user is already
      * logged in, this is a no-op.
@@ -40,7 +47,16 @@ open class TechWorkloadUserClient {
      *
      * @throws IllegalArgumentException If the password was wrong or the user is not yet registered.
      */
-    fun login(password: String): CompletableFuture<Unit> = TODO("Implement me!")
+    fun login(password: String): CompletableFuture<Unit> {
+        return techWM.authenticate(username, password).thenApply { token ->
+            connectedToken = token
+            userManager.setUserLoginState(username, true)
+        }.handle { _, e ->
+            if (e != null){
+                throw IllegalArgumentException()
+            }
+        }
+    }
 
     /**
      * Log out of the system. After logging out, a user is no longer considered online.
@@ -49,7 +65,12 @@ open class TechWorkloadUserClient {
      *
      * @throws IllegalArgumentException If the user was not previously logged in.
      */
-    fun logout(): CompletableFuture<Unit> = TODO("Implement me!")
+    fun logout(): CompletableFuture<Unit> {
+        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
+            if (isLoggedIn) userManager.setUserLoginState(username, false).thenApply { connectedToken = null }
+            else throw IllegalArgumentException()
+        }
+    }
 
     /**
      * Queue resources for a job.
@@ -59,7 +80,17 @@ open class TechWorkloadUserClient {
      * @throws PermissionException If the user is not logged in.
      * @throws IllegalArgumentException If the job could not be submitted, according to permission or account policy.
      */
-    fun submitJob(jobName: String, resources: List<String>): CompletableFuture<AllocatedJob> = TODO("Implement me!")
+    fun submitJob(jobName: String, resources: List<String>): CompletableFuture<AllocatedJob> {
+        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
+            if (isLoggedIn) {
+                techWM.submitJob(username, jobName, resources).handle { res, e ->
+                    if (e != null) throw IllegalArgumentException()
+                    else res
+                }
+            }
+            else throw PermissionException()
+        }
+    }
 
     /**
      * As a new user, request access to the system for a given [username] and [password].
@@ -71,7 +102,15 @@ open class TechWorkloadUserClient {
      * @throws IllegalArgumentException If the user already requested access and the previous request was not
      * resolved (accepted/denied)
      */
-    fun requestAccessToSystem(username: String, password: String, reason: String): CompletableFuture<Unit> = TODO("Implement me!")
+    fun requestAccessToSystem(username: String, password: String, reason: String): CompletableFuture<Unit> {
+        return requestManager.isRequestForUsernameExists(username)
+            .thenCompose { isRequestForUsernameExists ->
+                if (isRequestForUsernameExists)
+                    throw IllegalArgumentException()
+                else
+                    requestManager.addAccessRequest(AccessRequestWithPassword(username, reason, password))
+            }
+    }
 
     /**
      * Get online users, possible filtering by a [PermissionLevel]. If [PermissionLevel] is `null`, show all users.
