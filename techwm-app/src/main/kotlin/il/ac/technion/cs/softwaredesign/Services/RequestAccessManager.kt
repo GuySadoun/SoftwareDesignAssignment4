@@ -8,17 +8,17 @@ import java.util.concurrent.CompletableFuture
 
 class RequestAccessManager @Inject constructor(private val dbRequestAccessHandler: DbRequestAccessHandler) {
 
-    fun addAccessRequest(request: AccessRequest, password: String): CompletableFuture<Unit>{
-        return dbRequestAccessHandler.addRequest(request, password)
+    fun addAccessRequest(username: String, reason: String, password: String): CompletableFuture<Unit>{
+        return dbRequestAccessHandler.addRequest(username, reason, password)
     }
 
     fun isRequestForUsernameExists(username: String): CompletableFuture<Boolean>{
         return dbRequestAccessHandler.isRequestForUsernameExists(username)
     }
 
-    fun getAllRequests(): CompletableFuture<List<AccessRequest>> {
-        val requestsList = mutableListOf<AccessRequest>()
-        var listCompletable = CompletableFuture.completedFuture(requestsList)
+    fun getAllRequestsStrings(): CompletableFuture<List<Pair<String, String>>> {
+        val usernameReasonList = mutableListOf<Pair<String, String>>()
+        var listCompletable = CompletableFuture.completedFuture(usernameReasonList)
 
         return dbRequestAccessHandler.getNumberOfRequests()
             .thenCompose { numberOfRequests ->
@@ -28,12 +28,12 @@ class RequestAccessManager @Inject constructor(private val dbRequestAccessHandle
                             dbRequestAccessHandler.isActiveBySerialNumber(i).thenCompose { isActive ->
                                 if (isActive){
                                     dbRequestAccessHandler.getRequestBySerialNumber(i)
-                                        .thenApply { request ->
-                                            requestsList.add(request!!)
-                                            requestsList
+                                        .thenApply { usernameReasonPair ->
+                                            usernameReasonList.add(usernameReasonPair!!)
+                                            usernameReasonList
                                         }
                                 } else {
-                                    CompletableFuture.completedFuture(requestsList)
+                                    CompletableFuture.completedFuture(usernameReasonList)
                                 }
                             }
                         }

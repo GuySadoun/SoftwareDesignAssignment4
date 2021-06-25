@@ -34,11 +34,11 @@ interface AccessRequest {
  * This is the main class implementing TechWM Clients, the client layer interacting with the TechWM application.
  */
 open class TechWorkloadUserClient(
-    private val username : String,
-    private val techWM : TechWorkloadManager,
-    private val userManager: UserLoginManager,
-    private val requestManager: RequestAccessManager) {
-    private var connectedToken : String? = null
+    protected val username : String,
+    protected val userManager: UserLoginManager,
+    protected val techWM : TechWorkloadManager,
+    protected val requestManager: RequestAccessManager) {
+    protected var connectedToken : String? = null
     /**
      * Login with a given password. A successfully logged-in user is considered "online". If the user is already
      * logged in, this is a no-op.
@@ -117,7 +117,7 @@ open class TechWorkloadUserClient(
                 if (isRequestForUsernameExists)
                     throw IllegalArgumentException()
                 else
-                    requestManager.addAccessRequest(AccessRequestImpl(username, reason), password)
+                    requestManager.addAccessRequest(username, reason, password)
             }
     }
 
@@ -129,7 +129,12 @@ open class TechWorkloadUserClient(
      * @throws PermissionException If the user is not logged in.
      * @return A list of user IDs which are currently online.
      */
-    fun onlineUsers(permissionLevel: PermissionLevel? = null): CompletableFuture<List<String>> = TODO("Implement me!")
+    fun onlineUsers(permissionLevel: PermissionLevel? = null): CompletableFuture<List<String>> {
+        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
+            if (!isLoggedIn) throw PermissionException()
+            else userManager.getOnlineUsers(permissionLevel)
+        }
+    }
 
     /**
      * Get messages currently in your inbox from other users.
@@ -139,7 +144,9 @@ open class TechWorkloadUserClient(
      * @return A mapping from usernames to lists of messages (conversations), sorted by time of sending.
      * @throws PermissionException If the user is not logged in.
      */
-    fun inbox(): CompletableFuture<Inbox> = TODO("Implement me!")
+    fun inbox(): CompletableFuture<Inbox> {
+
+    }
 
     /**
      * Send a message to a username [toUsername].
@@ -174,7 +181,22 @@ class TechWorkloadAdminClient(
      *
      * @throws PermissionException If the user is not logged in.
      */
-    fun accessRequests(): CompletableFuture<List<AccessRequest>> = TODO("Implement me!")
+    fun accessRequests(): CompletableFuture<List<AccessRequest>> {
+        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
+            if (isLoggedIn) {
+                requestManager.getAllRequestsStrings().thenApply { reqInfoList ->
+                    reqInfoList.map { reqInfo ->
+                        AccessRequestImpl(
+                            reqInfo.first/*username*/,
+                            reqInfo.second/*reason*/,
+                            techWM, requestManager, connectedToken!!)
+                    }
+                }
+            } else {
+                throw PermissionException()
+            }
+        }
+    }
 }
 
 /**
