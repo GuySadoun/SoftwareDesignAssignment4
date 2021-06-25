@@ -6,17 +6,10 @@ class AccessRequestImpl(override val requestingUsername: String, override val re
     override fun approve(): CompletableFuture<Unit> {
         TODO("Not yet implemented")
         //go to db to get the password
-        //AccessRequestWithPassword().approve
-    }
+        //register
 
-    override fun decline(): CompletableFuture<Unit> {
-        TODO("Not yet implemented")
-    }
-}
 
-class AccessRequestWithPassword(override val requestingUsername: String, override val reason: String, val password: String) : AccessRequest  {
-    override fun approve(): CompletableFuture<Unit> {
-        TODO("Not yet implemented")
+    //AccessRequestWithPassword().approve
     }
 
     override fun decline(): CompletableFuture<Unit> {

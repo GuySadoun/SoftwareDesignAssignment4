@@ -7,7 +7,7 @@ package il.ac.technion.cs.softwaredesign.services.database
 class DbDirectoriesPaths {
     companion object {
         const val UsernameToPassword = "UsernameToPassword_"
-        const val UsernameToUser = "UsernameToUser_"
+        const val UsersDbPath = "UsernameToUser_"
         const val UsernameToToken = "UsernameToToken_"
         const val TokenToUsername = "TokenToUsername_"
         const val DeletedTokens = "DeletedTokens_"

@@ -50,7 +50,10 @@ open class TechWorkloadUserClient(
     fun login(password: String): CompletableFuture<Unit> {
         return techWM.authenticate(username, password).thenApply { token ->
             connectedToken = token
-            userManager.setUserLoginState(username, true)
+            techWM.userInformation(connectedToken!!, username)
+                .thenCompose { userInformation ->
+                    userManager.loginUser(username, userInformation!!.permissionLevel)
+                }
         }.handle { _, e ->
             if (e != null){
                 throw IllegalArgumentException()
@@ -67,7 +70,13 @@ open class TechWorkloadUserClient(
      */
     fun logout(): CompletableFuture<Unit> {
         return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (isLoggedIn) userManager.setUserLoginState(username, false).thenApply { connectedToken = null }
+            if (isLoggedIn){
+                techWM.userInformation(connectedToken!!, username)
+                    .thenCompose { userInformation ->
+                        userManager.logoutUser(username, userInformation!!.permissionLevel)
+                            .thenApply { connectedToken = null }
+                    }
+            }
             else throw IllegalArgumentException()
         }
     }
@@ -108,7 +117,7 @@ open class TechWorkloadUserClient(
                 if (isRequestForUsernameExists)
                     throw IllegalArgumentException()
                 else
-                    requestManager.addAccessRequest(AccessRequestWithPassword(username, reason, password))
+                    requestManager.addAccessRequest(AccessRequestImpl(username, reason), password)
             }
     }
 
@@ -153,7 +162,11 @@ open class TechWorkloadUserClient(
     fun deleteMessage(id: String): CompletableFuture<Unit> = TODO("Implement me!")
 }
 
-class TechWorkloadAdminClient: TechWorkloadUserClient() {
+class TechWorkloadAdminClient(
+    username : String,
+    techWM : TechWorkloadManager,
+    userManager: UserLoginManager,
+    requestManager: RequestAccessManager): TechWorkloadUserClient(username, techWM, userManager, requestManager) {
     /**
      * View all access requests in the system.
      *

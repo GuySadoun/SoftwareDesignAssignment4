@@ -8,3 +8,16 @@ class StorageFactoryImpl @Inject constructor(private val secureStorageFactory: S
     override fun <DataEntry> open(name: String, serializer: Serializer<DataEntry>): CompletableFuture<Storage<DataEntry>> =
         secureStorageFactory.open(name.toByteArray()).thenApply { StorageImpl(serializer, it) }
 }
+
+
+
+
+
+
+
+
+
+
+// first open: requests -> 6 paths
+
+// sec open: users -> 9 paths

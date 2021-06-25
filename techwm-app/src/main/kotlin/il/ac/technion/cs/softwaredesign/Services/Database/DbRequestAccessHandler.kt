@@ -3,15 +3,17 @@ package il.ac.technion.cs.softwaredesign.services.database
 import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.AccessRequest
 import il.ac.technion.cs.softwaredesign.AccessRequestImpl
-import il.ac.technion.cs.softwaredesign.AccessRequestWithPassword
+import il.ac.technion.cs.softwaredesign.NoUsernameExistException
 import main.kotlin.SerializerImpl
 import main.kotlin.StorageFactoryImpl
 import java.util.concurrent.CompletableFuture
 
+
 class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactoryImpl) {
     companion object {
-        const val serialNumberToUsername = "_serialToUsername"
+        const val serialNumberToUsernameSuffix = "_serialToUsername"
         const val serialNumberToIsActiveSuffix = "_serialToIsActive"
+
         const val usernameToReasonSuffix = "_usernameToReason"
         const val usernameToPasswordSuffix = "_usernameToPassword"
         const val usernameToSerialNumberSuffix = "_usernameToSerial"
@@ -21,7 +23,7 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
     }
     private val dbAccessRequests by lazy { databaseFactory.open(DbDirectoriesPaths.AccessRequests, SerializerImpl()) }
 
-    fun addRequest(request: AccessRequestWithPassword): CompletableFuture<Unit>{
+    fun addRequest(request: AccessRequest, password: String): CompletableFuture<Unit>{
         return isRequestForUsernameExists(request.requestingUsername).thenApply { alreadyExistsRequest ->
             if (alreadyExistsRequest) {
                 throw IllegalArgumentException()
@@ -31,7 +33,7 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
                 storage.read(sizeKey).thenCompose { size ->
                     val serialNumber: Int = size?.toInt() ?: 0
 
-                    storage.write(serialNumber.toString() + serialNumberToUsername, nonEmptyPrefix + request.requestingUsername)
+                    storage.write(serialNumber.toString() + serialNumberToUsernameSuffix, nonEmptyPrefix + request.requestingUsername)
                         .thenCompose {
                             storage.write(sizeKey, (serialNumber + 1).toString())
                         }.thenCompose {
@@ -41,7 +43,7 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
                         }.thenCompose {
                             storage.write(serialNumber.toString() + serialNumberToIsActiveSuffix, "1")
                         }.thenCompose {
-                            storage.write(request.requestingUsername + usernameToPasswordSuffix, request.password)
+                            storage.write(request.requestingUsername + usernameToPasswordSuffix, password)
                         }
                 }
             }
@@ -59,9 +61,17 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
         }
     }
 
+    fun getPasswordByUsername(username: String): CompletableFuture<String> {
+        return dbAccessRequests.thenCompose { storage ->
+            storage.read(username + usernameToPasswordSuffix)
+        }.thenApply { password ->
+            password ?: throw NoUsernameExistException()
+        }
+    }
+
     fun getRequestBySerialNumber(serialNumber: Int): CompletableFuture<AccessRequest?> {
         return dbAccessRequests.thenCompose { storage ->
-            storage.read(serialNumber.toString() + serialNumberToUsername)
+            storage.read(serialNumber.toString() + serialNumberToUsernameSuffix)
                 .thenCompose { username ->
                     storage.read(username + usernameToReasonSuffix).thenApply { reason ->
                         if (username == null || reason == null)
