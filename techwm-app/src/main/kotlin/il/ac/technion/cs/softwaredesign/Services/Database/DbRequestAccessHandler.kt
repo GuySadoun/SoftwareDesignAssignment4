@@ -34,15 +34,15 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
                     val serialNumber: Int = size?.toInt() ?: 0
 
                     storage.write(serialNumber.toString() + serialNumberToUsernameSuffix, nonEmptyPrefix + request.requestingUsername)
-                        .thenCompose {
+                        .thenCompose { // increase size
                             storage.write(sizeKey, (serialNumber + 1).toString())
-                        }.thenCompose {
+                        }.thenCompose { // insert username -> reason
                             storage.write(request.requestingUsername + usernameToReasonSuffix, nonEmptyPrefix + request.reason)
-                        }.thenCompose {
+                        }.thenCompose { // insert username -> serial
                             storage.write(request.requestingUsername + usernameToSerialNumberSuffix, serialNumber.toString())
-                        }.thenCompose {
+                        }.thenCompose { // update serial -> isActive
                             storage.write(serialNumber.toString() + serialNumberToIsActiveSuffix, "1")
-                        }.thenCompose {
+                        }.thenCompose { // insert username -> password
                             storage.write(request.requestingUsername + usernameToPasswordSuffix, password)
                         }
                 }

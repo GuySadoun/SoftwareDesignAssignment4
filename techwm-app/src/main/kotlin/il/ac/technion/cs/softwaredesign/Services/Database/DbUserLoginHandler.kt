@@ -41,7 +41,7 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactoryImpl
                                     val serialNumber: Int = size?.toInt() ?: 0
                                     storage.write(
                                         serialNumber.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(),
-                                        username
+                                        nonEmptyPrefix + username
                                     ).thenCompose {
                                         storage.write(SerialToLoggedInUsernameSuffix + sizeKey,
                                             (serialNumber + 1).toString())
@@ -75,6 +75,14 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactoryImpl
     fun getNumberOfOnlineUsers(): CompletableFuture<Int> {
         return dbUsernameToLoginStateHandler.thenCompose { storage ->
             storage.read(SerialToLoggedInUsernameSuffix + sizeKey).thenApply { size -> size?.toInt() ?: 0 }
+        }
+    }
+
+    fun getUsernameBySerialNumIfOnline(serial: Int, permissionLevel: PermissionLevel) : CompletableFuture<String?> {
+        return dbUsernameToLoginStateHandler.thenCompose { storage ->
+            storage.read(serial.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString()).thenApply { username ->
+                    username?.drop(1)
+            }
         }
     }
 }

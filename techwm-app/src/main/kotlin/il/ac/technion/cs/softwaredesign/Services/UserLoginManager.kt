@@ -39,25 +39,20 @@ class UserLoginManager (private val mDbUserInfoHandler: DbUserLoginHandler) {
         val onlineUsersList = mutableListOf<String>()
         var listCompletable = CompletableFuture.completedFuture(onlineUsersList)
 
-        return mDbUserInfoHandler.getNumberOfOnlineUsers()
-            .thenCompose { numberOfRequests ->
-                for (i in 0 until numberOfRequests) {
-                    listCompletable = listCompletable
-                        .thenCompose {
-                            dbRequestAccessHandler.isActiveBySerialNumber(i).thenCompose { isActive ->
-                                if (isActive){
-                                    dbRequestAccessHandler.getRequestBySerialNumber(i)
-                                        .thenApply { request ->
-                                            requestsList.add(request!!)
-                                            requestsList
-                                        }
-                                } else {
-                                    CompletableFuture.completedFuture(requestsList)
-                                }
-                            }
+        return mDbUserInfoHandler.getNumberOfOnlineUsers().thenCompose { numberOfRequests ->
+            for (i in 0 until numberOfRequests) {
+                listCompletable = listCompletable.thenCompose {
+                    mDbUserInfoHandler.getUsernameBySerialNumIfOnline(i, permissionLevel).thenApply { username ->
+                        if (username != null) {
+                            onlineUsersList.add(username)
+                            onlineUsersList
+                        } else {
+                            onlineUsersList
                         }
+                    }
                 }
-                listCompletable
-            }.thenApply { mutableList -> ImmutableList.copyOf(mutableList) }
+            }
+            listCompletable
+        }.thenApply { mutableList -> ImmutableList.copyOf(mutableList) }
     }
 }
