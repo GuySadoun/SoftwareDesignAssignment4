@@ -3,8 +3,7 @@ package il.ac.technion.cs.softwaredesign.Services.Database
 import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.PermissionLevel
 import il.ac.technion.cs.softwaredesign.services.database.DbDirectoriesPaths
-import il.ac.technion.cs.softwaredesign.services.database.DbRequestAccessHandler
-import main.kotlin.SerializerImpl
+import main.kotlin.StringSerializerImpl
 import main.kotlin.StorageFactoryImpl
 import java.lang.IllegalArgumentException
 import java.util.concurrent.CompletableFuture
@@ -20,7 +19,7 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactoryImpl
         const val sizeKey = "size"
     }
 
-    private val dbUsernameToLoginStateHandler by lazy { databaseFactory.open(DbDirectoriesPaths.UsersDbPath, SerializerImpl()) }
+    private val dbUsernameToLoginStateHandler by lazy { databaseFactory.open(DbDirectoriesPaths.UsersDbPath, StringSerializerImpl()) }
 
     fun isUserLoggedIn(username: String): CompletableFuture<Boolean> {
         return dbUsernameToLoginStateHandler.thenCompose { usernameToUserStorage ->

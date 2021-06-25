@@ -1,5 +1,6 @@
 package il.ac.technion.cs.softwaredesign
 
+import il.ac.technion.cs.softwaredesign.Services.InboxManager
 import il.ac.technion.cs.softwaredesign.Services.UserLoginManager
 import il.ac.technion.cs.softwaredesign.services.RequestAccessManager
 import java.util.concurrent.CompletableFuture
@@ -37,7 +38,8 @@ open class TechWorkloadUserClient(
     protected val username : String,
     protected val userManager: UserLoginManager,
     protected val techWM : TechWorkloadManager,
-    protected val requestManager: RequestAccessManager) {
+    protected val requestManager: RequestAccessManager,
+    protected val inboxManager: InboxManager) {
     protected var connectedToken : String? = null
     /**
      * Login with a given password. A successfully logged-in user is considered "online". If the user is already
@@ -154,7 +156,19 @@ open class TechWorkloadUserClient(
      * @throws PermissionException If the user is not logged in.
      * @throws IllegalArgumentException If the target user does not exist, or message contains more than 120 characters.
      */
-    fun sendMessage(toUsername: String, message: String): CompletableFuture<Unit> = TODO("Implement me!")
+    fun sendMessage(toUsername: String, message: String): CompletableFuture<Unit> {
+        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
+            if (!isLoggedIn)
+                throw PermissionException()
+            else
+                techWM.userInformation(connectedToken!!, toUsername).thenCompose { user ->
+                if (user == null || message.length > 120)
+                    throw IllegalArgumentException()
+                else
+                    inboxManager.addMessageToConversation(username, toUsername, message)
+            }
+        }
+    }
 
     /**
      * Delete a message from your inbox.

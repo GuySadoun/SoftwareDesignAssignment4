@@ -1,11 +1,9 @@
 package il.ac.technion.cs.softwaredesign.services.database
 
 import com.google.inject.Inject
-import il.ac.technion.cs.softwaredesign.AccessRequest
-import il.ac.technion.cs.softwaredesign.AccessRequestImpl
 import il.ac.technion.cs.softwaredesign.NoUsernameExistException
 import il.ac.technion.cs.softwaredesign.TechWorkloadManager
-import main.kotlin.SerializerImpl
+import main.kotlin.StringSerializerImpl
 import main.kotlin.StorageFactoryImpl
 import java.util.concurrent.CompletableFuture
 
@@ -22,7 +20,7 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
         const val nonEmptyPrefix = "_"
         const val sizeKey = "size"
     }
-    private val dbAccessRequests by lazy { databaseFactory.open(DbDirectoriesPaths.AccessRequests, SerializerImpl()) }
+    private val dbAccessRequests by lazy { databaseFactory.open(DbDirectoriesPaths.AccessRequests, StringSerializerImpl()) }
 
     fun addRequest(username: String, reason: String, password: String): CompletableFuture<Unit>{
         return isRequestForUsernameExists(username).thenApply { alreadyExistsRequest ->
