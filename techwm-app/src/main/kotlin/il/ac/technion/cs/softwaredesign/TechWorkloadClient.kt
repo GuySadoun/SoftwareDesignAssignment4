@@ -144,9 +144,7 @@ open class TechWorkloadUserClient(
      * @return A mapping from usernames to lists of messages (conversations), sorted by time of sending.
      * @throws PermissionException If the user is not logged in.
      */
-    fun inbox(): CompletableFuture<Inbox> {
-
-    }
+    fun inbox(): CompletableFuture<Inbox> = TODO("Implement me!")
 
     /**
      * Send a message to a username [toUsername].
@@ -173,7 +171,7 @@ class TechWorkloadAdminClient(
     username : String,
     techWM : TechWorkloadManager,
     userManager: UserLoginManager,
-    requestManager: RequestAccessManager): TechWorkloadUserClient(username, techWM, userManager, requestManager) {
+    requestManager: RequestAccessManager): TechWorkloadUserClient(username,  userManager, techWM, requestManager) {
     /**
      * View all access requests in the system.
      *
