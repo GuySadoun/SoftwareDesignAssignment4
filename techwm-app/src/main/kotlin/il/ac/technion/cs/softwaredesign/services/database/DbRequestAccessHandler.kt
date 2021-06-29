@@ -19,6 +19,7 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
 
         const val nonEmptyPrefix = "_"
         const val sizeKey = "size"
+        const val isActiveSymbol = "1"
     }
     private val dbAccessRequests by lazy { databaseFactory.open(DbDirectoriesPaths.AccessRequests, StringSerializerImpl()) }
 
@@ -40,9 +41,9 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
                         }.thenCompose { // insert username -> serial
                             storage.write(username + usernameToSerialNumberSuffix, serialNumber.toString())
                         }.thenCompose { // update serial -> isActive
-                            storage.write(serialNumber.toString() + serialNumberToIsActiveSuffix, "1")
+                            storage.write(serialNumber.toString() + serialNumberToIsActiveSuffix, isActiveSymbol)
                         }.thenCompose { // insert username -> password
-                            storage.write(username + usernameToPasswordSuffix, password)
+                            storage.write(username + usernameToPasswordSuffix, nonEmptyPrefix + password)
                         }
                 }
             }
@@ -51,13 +52,20 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
 
     fun getRequestBySerialNumber(serialNumber: Int): CompletableFuture<Pair<String, String>?> {
         return dbAccessRequests.thenCompose { storage ->
-            storage.read(serialNumber.toString() + serialNumberToUsernameSuffix)
-            .thenCompose { username ->
-                storage.read(username?.drop(nonEmptyPrefix.length) + usernameToReasonSuffix).thenApply { reason ->
-                    if (username == null || reason == null)
-                        null
-                    else
-                        Pair(username.drop(nonEmptyPrefix.length), reason.drop(nonEmptyPrefix.length))
+            storage.read(serialNumber.toString() + serialNumberToIsActiveSuffix).thenApply { it == isActiveSymbol }
+            .thenCompose { isRequestActive ->
+                if (!isRequestActive)
+                    CompletableFuture.completedFuture(null)
+                else {
+                    storage.read(serialNumber.toString() + serialNumberToUsernameSuffix)
+                        .thenCompose { username ->
+                            storage.read(username?.drop(nonEmptyPrefix.length) + usernameToReasonSuffix).thenApply { reason ->
+                                if (username == null || reason == null)
+                                    null
+                                else
+                                    Pair(username.drop(nonEmptyPrefix.length), reason.drop(nonEmptyPrefix.length))
+                            }
+                        }
                 }
             }
         }
@@ -75,8 +83,9 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
     fun getPasswordByUsername(username: String): CompletableFuture<String> {
         return dbAccessRequests.thenCompose { storage ->
             storage.read(username + usernameToPasswordSuffix)
+        }.thenApply { it?.drop(nonEmptyPrefix.length)
         }.thenApply { password ->
-            password ?: throw NoUsernameExistException()
+                password ?: throw NoUsernameExistException()
         }
     }
 

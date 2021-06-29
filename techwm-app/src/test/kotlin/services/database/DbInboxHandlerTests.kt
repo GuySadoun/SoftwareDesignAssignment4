@@ -2,6 +2,7 @@ package services.database
 
 import il.ac.technion.cs.softwaredesign.Message
 import il.ac.technion.cs.softwaredesign.services.database.DbInboxHandler
+import il.ac.technion.cs.softwaredesign.services.database.DbRequestAccessHandler
 import io.mockk.every
 import io.mockk.mockk
 import main.kotlin.PairSerializerImpl
@@ -84,6 +85,32 @@ class DbInboxHandlerTests {
 
         //Assert
         Assertions.assertNull(inboxHandler.getMessageById(username2, messageId2).join())
+    }
+
+    @Test
+    fun `getMessageById return null if there is no message with that id`(){
+        // Arrange
+        val inboxHandler = DbInboxHandler(dbFactoryMock)
+        inboxHandler.addMessage(from = username1, to = username2, from1To2_1).join()
+
+        // Act
+        val actual = inboxHandler.getMessageById(username2, messageId2).join()
+
+        //Assert
+        Assertions.assertNull(actual)
+    }
+
+    @Test
+    fun `getMessageById return null if username does not exist`(){
+        // Arrange
+        val inboxHandler = DbInboxHandler(dbFactoryMock)
+        inboxHandler.addMessage(from = username1, to = username2, from1To2_1).join()
+
+        // Act
+        val actual = inboxHandler.getMessageById(username1, messageId1).join()
+
+        //Assert
+        Assertions.assertNull(actual)
     }
 
     @Test
