@@ -2,13 +2,13 @@ package il.ac.technion.cs.softwaredesign.services.database
 
 import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.NoUsernameExistException
-import il.ac.technion.cs.softwaredesign.TechWorkloadManager
+import il.ac.technion.cs.softwaredesign.services.database.DbDirectoriesPaths
+import main.kotlin.StorageFactory
 import main.kotlin.StringSerializerImpl
-import main.kotlin.StorageFactoryImpl
 import java.util.concurrent.CompletableFuture
 
 
-class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactoryImpl) {
+class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory) {
     companion object {
         const val serialNumberToUsernameSuffix = "_serialToUsername"
         const val serialNumberToIsActiveSuffix = "_serialToIsActive"
@@ -49,30 +49,11 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
         }
     }
 
-//    private fun getRequestInfoByUsername(username: String): CompletableFuture<AccessRequest?> {
-//        return dbAccessRequests.thenCompose { storage ->
-//            storage.read(username + usernameToReasonSuffix).thenApply { it?.drop(nonEmptyPrefix.length) }
-//        }.thenApply { reason ->
-//            if (reason == null)
-//                null
-//            else
-//                AccessRequestImpl(username, reason, )
-//        }
-//    }
-
-    fun getPasswordByUsername(username: String): CompletableFuture<String> {
-        return dbAccessRequests.thenCompose { storage ->
-            storage.read(username + usernameToPasswordSuffix)
-        }.thenApply { password ->
-            password ?: throw NoUsernameExistException()
-        }
-    }
-
     fun getRequestBySerialNumber(serialNumber: Int): CompletableFuture<Pair<String, String>?> {
         return dbAccessRequests.thenCompose { storage ->
             storage.read(serialNumber.toString() + serialNumberToUsernameSuffix)
             .thenCompose { username ->
-                storage.read(username + usernameToReasonSuffix).thenApply { reason ->
+                storage.read(username?.drop(nonEmptyPrefix.length) + usernameToReasonSuffix).thenApply { reason ->
                     if (username == null || reason == null)
                         null
                     else
@@ -91,6 +72,20 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
         }
     }
 
+    fun getPasswordByUsername(username: String): CompletableFuture<String> {
+        return dbAccessRequests.thenCompose { storage ->
+            storage.read(username + usernameToPasswordSuffix)
+        }.thenApply { password ->
+            password ?: throw NoUsernameExistException()
+        }
+    }
+
+    fun getNumberOfRequests(): CompletableFuture<Int>{
+        return dbAccessRequests.thenCompose { storage ->
+            storage.read(sizeKey).thenApply { size -> size?.toInt() ?: 0 }
+        }
+    }
+
     fun isRequestForUsernameExists(username: String): CompletableFuture<Boolean> {
         return dbAccessRequests.thenCompose { storage ->
             storage.read(username + usernameToSerialNumberSuffix)
@@ -103,12 +98,6 @@ class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactory
                     else
                         CompletableFuture.completedFuture(false)
                 }
-        }
-    }
-
-    fun getNumberOfRequests(): CompletableFuture<Int>{
-        return dbAccessRequests.thenCompose { storage ->
-            storage.read(sizeKey).thenApply { size -> size?.toInt() ?: 0 }
         }
     }
 

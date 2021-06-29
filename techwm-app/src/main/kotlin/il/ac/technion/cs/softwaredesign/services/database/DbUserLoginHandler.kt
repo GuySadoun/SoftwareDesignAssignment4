@@ -1,14 +1,13 @@
-package il.ac.technion.cs.softwaredesign.Services.Database
+package il.ac.technion.cs.softwaredesign.services.database
 
 import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.PermissionLevel
-import il.ac.technion.cs.softwaredesign.services.database.DbDirectoriesPaths
+import main.kotlin.StorageFactory
 import main.kotlin.StringSerializerImpl
-import main.kotlin.StorageFactoryImpl
 import java.lang.IllegalArgumentException
 import java.util.concurrent.CompletableFuture
 
-class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactoryImpl) {
+class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactory) {
     companion object {
         const val SerialToLoggedInUsernameSuffix = "_serialToLoggedInUsername"
         const val UsernameToIsLoggedIn = "_usernameToIsLoggedIn"

@@ -11,7 +11,7 @@ class PairSerializerImpl : Serializer<Pair<String, String>> {
     }
 
     override fun deserialize(encoded: ByteArray): Pair<String, String> {
-        val fromMsg = encoded.toString().split(separatorKey)
+        val fromMsg = String(encoded).split(separatorKey)
         if (fromMsg.size > 2) println("BAD LUCK - WHY CHOOSE \"^|\"?!?!")
         return Pair(fromMsg[0], fromMsg[1])
     }

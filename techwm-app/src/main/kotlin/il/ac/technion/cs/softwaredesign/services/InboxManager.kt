@@ -1,9 +1,9 @@
-package il.ac.technion.cs.softwaredesign.Services
+package il.ac.technion.cs.softwaredesign.services
 
 import com.google.common.collect.ImmutableList
 import il.ac.technion.cs.softwaredesign.Inbox
 import il.ac.technion.cs.softwaredesign.Message
-import il.ac.technion.cs.softwaredesign.Services.Database.DbInboxHandler
+import il.ac.technion.cs.softwaredesign.services.database.DbInboxHandler
 import java.util.concurrent.CompletableFuture
 
 class InboxManager(private val dbInboxHandler: DbInboxHandler) {
@@ -29,7 +29,7 @@ class InboxManager(private val dbInboxHandler: DbInboxHandler) {
         val messagesList = mutableListOf<Message>()
         var listCompletable = CompletableFuture.completedFuture(messagesList)
 
-        return dbInboxHandler.getNumberOfMessages(username)
+        return dbInboxHandler.getNextId(username)
             .thenCompose { numberOfMessages ->
                 for (i in 0 until numberOfMessages) {
                     listCompletable = listCompletable

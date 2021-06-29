@@ -1,7 +1,7 @@
 package il.ac.technion.cs.softwaredesign
 
-import il.ac.technion.cs.softwaredesign.Services.InboxManager
-import il.ac.technion.cs.softwaredesign.Services.UserLoginManager
+import il.ac.technion.cs.softwaredesign.services.InboxManager
+import il.ac.technion.cs.softwaredesign.services.UserLoginManager
 import il.ac.technion.cs.softwaredesign.services.RequestAccessManager
 import java.util.concurrent.CompletableFuture
 

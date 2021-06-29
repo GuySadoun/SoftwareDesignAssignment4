@@ -1,15 +1,12 @@
-package il.ac.technion.cs.softwaredesign.Services.Database
+package il.ac.technion.cs.softwaredesign.services.database
 
 import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.Message
-import il.ac.technion.cs.softwaredesign.TechWorkloadManager
-import il.ac.technion.cs.softwaredesign.services.database.DbDirectoriesPaths
-import il.ac.technion.cs.softwaredesign.services.database.DbRequestAccessHandler
 import main.kotlin.PairSerializerImpl
-import main.kotlin.StorageFactoryImpl
+import main.kotlin.StorageFactory
 import java.util.concurrent.CompletableFuture
 
-class DbInboxHandler @Inject constructor(databaseFactory: StorageFactoryImpl){
+class DbInboxHandler @Inject constructor(databaseFactory: StorageFactory){
     companion object {
         const val separatorKey = "^"
         const val sizeKey = "size"
@@ -44,7 +41,7 @@ class DbInboxHandler @Inject constructor(databaseFactory: StorageFactoryImpl){
         }
     }
 
-    fun getNumberOfMessages(username: String): CompletableFuture<Int> {
+    fun getNextId(username: String): CompletableFuture<Int> {
         return dbInbox.thenCompose { storage ->
             storage.read(username + separatorKey + sizeKey).thenApply { size -> size?.first?.toInt() ?: 0 }
         }
