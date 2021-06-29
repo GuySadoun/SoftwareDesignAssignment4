@@ -45,6 +45,6 @@ class InboxManager(private val dbInboxHandler: DbInboxHandler) {
                         }
                 }
                 listCompletable
-            }.thenApply { mutableList -> ImmutableList.copyOf(mutableList) }
+            }.thenApply { mutableList -> ImmutableList.copyOf(mutableList as MutableCollection<Message>) }
     }
 }

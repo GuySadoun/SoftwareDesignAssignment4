@@ -1,5 +1,7 @@
 package il.ac.technion.cs.softwaredesign
 
+import main.kotlin.Serializer
+
 const val ANSI_RESET = "\u001B[0m"
 const val ANSI_GREEN = "\u001B[32m"
 
