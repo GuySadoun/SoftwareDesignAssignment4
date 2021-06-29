@@ -8,7 +8,7 @@ import main.kotlin.StorageFactoryImpl
 import java.util.concurrent.CompletableFuture
 
 
-class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactoryImpl, techWM: TechWorkloadManager) {
+class DbRequestAccessHandler @Inject constructor(databaseFactory: StorageFactoryImpl) {
     companion object {
         const val serialNumberToUsernameSuffix = "_serialToUsername"
         const val serialNumberToIsActiveSuffix = "_serialToIsActive"

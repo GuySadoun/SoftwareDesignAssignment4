@@ -9,7 +9,7 @@ import main.kotlin.PairSerializerImpl
 import main.kotlin.StorageFactoryImpl
 import java.util.concurrent.CompletableFuture
 
-class DbInboxHandler @Inject constructor(databaseFactory: StorageFactoryImpl, techWM: TechWorkloadManager){
+class DbInboxHandler @Inject constructor(databaseFactory: StorageFactoryImpl){
     companion object {
         const val separatorKey = "^"
         const val sizeKey = "size"

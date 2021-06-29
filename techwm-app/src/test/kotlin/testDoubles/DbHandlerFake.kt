@@ -1,24 +1,31 @@
 package testDoubles
 
+import kotlinx.serialization.serializer
+import main.kotlin.Serializer
 import main.kotlin.Storage
 import java.util.concurrent.CompletableFuture
 
-class StorageFake : Storage<String> {
-    private val dbDictionary: MutableMap<String, String> = mutableMapOf()
+class StorageFake<DataEntry>(private val serializer: Serializer<DataEntry>) : Storage<DataEntry> {
+    private val dbDictionary: MutableMap<String, ByteArray> = mutableMapOf()
 
-    override fun write(key: String, dataEntry: String): CompletableFuture<Unit> {
-        return CompletableFuture.supplyAsync { dbDictionary[key] = dataEntry }
+    override fun write(key: String, dataEntry: DataEntry): CompletableFuture<Unit> {
+        return CompletableFuture.supplyAsync { dbDictionary[key] = serializer.serialize(dataEntry) }
     }
 
-    override fun read(key: String): CompletableFuture<String?> {
-        return CompletableFuture.supplyAsync { dbDictionary[key] }
+    override fun read(key: String): CompletableFuture<DataEntry?> {
+        return CompletableFuture.supplyAsync { dbDictionary[key] }.thenApply {
+            if (it == null || it.isEmpty())
+                null
+            else
+                serializer.deserialize(dbDictionary[key]!!)
+        }
     }
 
-    override fun create(key: String, dataEntry: String): CompletableFuture<Boolean> {
+    override fun create(key: String, dataEntry: DataEntry): CompletableFuture<Boolean> {
         throw NotImplementedError()
     }
 
-    override fun update(key: String, dataEntry: String): CompletableFuture<Boolean> {
+    override fun update(key: String, dataEntry: DataEntry): CompletableFuture<Boolean> {
         throw NotImplementedError()
     }
 
@@ -28,7 +35,7 @@ class StorageFake : Storage<String> {
                 false
             }
             else {
-                dbDictionary[key] = ""
+                dbDictionary[key] = ByteArray(0)
                 true
             }
         }
