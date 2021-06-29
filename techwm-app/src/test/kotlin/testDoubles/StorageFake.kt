@@ -29,11 +29,10 @@ class StorageFake<DataEntry>(private val serializer: Serializer<DataEntry>) : St
     }
 
     override fun delete(key: String): CompletableFuture<Boolean> {
-        return CompletableFuture.supplyAsync { dbDictionary[key] }.thenApply {
-            if (it == null){
+        return read(key).thenApply {  value ->
+            if (value == null) {
                 false
-            }
-            else {
+            } else {
                 dbDictionary[key] = ByteArray(0)
                 true
             }

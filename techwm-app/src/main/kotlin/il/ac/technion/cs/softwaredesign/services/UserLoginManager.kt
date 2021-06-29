@@ -38,7 +38,7 @@ class   UserLoginManager (private val mDbUserInfoHandler: DbUserLoginHandler) {
         val onlineUsersList = mutableListOf<String>()
         var listCompletable = CompletableFuture.completedFuture(onlineUsersList)
 
-        return mDbUserInfoHandler.getNumberOfOnlineUsers().thenCompose { numberOfRequests ->
+        return mDbUserInfoHandler.getNextSerialNumber().thenCompose { numberOfRequests ->
             for (i in 0 until numberOfRequests) {
                 listCompletable = listCompletable.thenCompose {
                     mDbUserInfoHandler.getUsernameBySerialNumIfOnline(i, permissionLevel).thenApply { username ->
