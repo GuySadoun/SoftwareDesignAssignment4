@@ -1,5 +1,6 @@
 package il.ac.technion.cs.softwaredesign
 
+import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.services.InboxManager
 import il.ac.technion.cs.softwaredesign.services.UserLoginManager
 import il.ac.technion.cs.softwaredesign.services.RequestAccessManager
@@ -34,16 +35,13 @@ interface AccessRequest {
 /**
  * This is the main class implementing TechWM Clients, the client layer interacting with the TechWM application.
  */
-open class TechWorkloadUserClient(
+open class TechWorkloadUserClient (
     protected val username: String,
     protected val userManager: UserLoginManager,
     protected val techWM: TechWorkloadManager,
     protected val requestManager: RequestAccessManager,
-    protected val inboxManager: InboxManager
+    private val inboxManager: InboxManager
 ) {
-
-    internal var connectedToken: String? = null
-
     /**
      * Login with a given password. A successfully logged-in user is considered "online". If the user is already
      * logged in, this is a no-op.
@@ -53,10 +51,12 @@ open class TechWorkloadUserClient(
      * @throws IllegalArgumentException If the password was wrong or the user is not yet registered.
      */
     fun login(password: String): CompletableFuture<Unit> {
-        return techWM.authenticate(username, password).thenApply { token -> connectedToken = token }
-            .thenCompose { techWM.userInformation(connectedToken!!, username) }
-            .thenCompose { userInformation ->
-                userManager.loginUser(username, userInformation!!.permissionLevel)
+        return techWM.authenticate(username, password)
+            .thenCompose { token ->
+                techWM.userInformation(token, username)
+                    .thenCompose { userInformation ->
+                        userManager.loginUser(username, userInformation!!.permissionLevel, token)
+                    }
             }.handle { _, e ->
                 if (e != null) {
                     throw IllegalArgumentException()
@@ -77,12 +77,11 @@ open class TechWorkloadUserClient(
      * @throws IllegalArgumentException If the user was not previously logged in.
      */
     fun logout(): CompletableFuture<Unit> {
-        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (isLoggedIn) {
-                techWM.userInformation(connectedToken!!, username)
+        return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
+            if (token != null) {
+                techWM.userInformation(token, username)
                     .thenCompose { userInformation ->
                         userManager.logoutUser(username, userInformation!!.permissionLevel)
-                            .thenApply { connectedToken = null }
                     }
             } else throw IllegalArgumentException()
         }
@@ -97,8 +96,8 @@ open class TechWorkloadUserClient(
      * @throws IllegalArgumentException If the job could not be submitted, according to permission or account policy.
      */
     fun submitJob(jobName: String, resources: List<String>): CompletableFuture<AllocatedJob> {
-        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (isLoggedIn) {
+        return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
+            if (token != null) {
                 techWM.submitJob(username, jobName, resources).handle { res, e ->
                     if (e != null) throw IllegalArgumentException()
                     else res
@@ -136,8 +135,8 @@ open class TechWorkloadUserClient(
      * @return A list of user IDs which are currently online.
      */
     fun onlineUsers(permissionLevel: PermissionLevel? = null): CompletableFuture<List<String>> {
-        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (!isLoggedIn) throw PermissionException()
+        return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
+            if (token == null) throw PermissionException()
             else userManager.getOnlineUsers(permissionLevel)
         }
     }
@@ -151,8 +150,8 @@ open class TechWorkloadUserClient(
      * @throws PermissionException If the user is not logged in.
      */
     fun inbox(): CompletableFuture<Inbox> {
-        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (!isLoggedIn)
+        return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
+            if (token == null)
                 throw PermissionException()
             else
                 inboxManager.getUserInbox(username)
@@ -168,11 +167,11 @@ open class TechWorkloadUserClient(
      * @throws IllegalArgumentException If the target user does not exist, or message contains more than 120 characters.
      */
     fun sendMessage(toUsername: String, message: String): CompletableFuture<Unit> {
-        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (!isLoggedIn)
+        return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
+            if (token == null)
                 throw PermissionException()
             else
-                techWM.userInformation(connectedToken!!, toUsername).thenCompose { user ->
+                techWM.userInformation(token, toUsername).thenCompose { user ->
                     if (user == null || message.length > 120)
                         throw IllegalArgumentException()
                     else
@@ -190,8 +189,8 @@ open class TechWorkloadUserClient(
      * @throws IllegalArgumentException If a message with the given [id] does not exist
      */
     fun deleteMessage(id: String): CompletableFuture<Unit> {
-        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (!isLoggedIn)
+        return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
+            if (token == null)
                 throw PermissionException()
             else
                 inboxManager.isMsgWithIdExist(username, id).thenCompose { isMsgWithIdExist ->
@@ -206,8 +205,8 @@ open class TechWorkloadUserClient(
 
 class TechWorkloadAdminClient(
     username: String,
-    techWM: TechWorkloadManager,
     userManager: UserLoginManager,
+    techWM: TechWorkloadManager,
     requestManager: RequestAccessManager,
     inboxManager: InboxManager
 ) : TechWorkloadUserClient(username, userManager, techWM, requestManager, inboxManager) {
@@ -219,14 +218,14 @@ class TechWorkloadAdminClient(
      * @throws PermissionException If the user is not logged in.
      */
     fun accessRequests(): CompletableFuture<List<AccessRequest>> {
-        return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (isLoggedIn) {
+        return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
+            if (token != null) {
                 requestManager.getAllRequestsStrings().thenApply { reqInfoList ->
                     reqInfoList.map { reqInfo ->
                         AccessRequestImpl(
                             reqInfo.first/*username*/,
                             reqInfo.second/*reason*/,
-                            techWM, requestManager, connectedToken!!
+                            techWM, requestManager, token
                         )
                     }
                 }
@@ -245,4 +244,18 @@ interface TechWorkloadClientFactory {
      * Get an instance of a [TechWorkloadUserClient] for a given username.
      */
     fun get(username: String): TechWorkloadUserClient
+}
+
+class TechWorkloadClientFactoryImpl @Inject constructor(
+    private val userManager: UserLoginManager,
+    private val techWM: TechWorkloadManager,
+    private val requestManager: RequestAccessManager,
+    private val inboxManager: InboxManager): TechWorkloadClientFactory{
+
+    override fun get(username: String): TechWorkloadUserClient {
+        return if (username == "admin")
+            TechWorkloadAdminClient(username, userManager, techWM, requestManager, inboxManager)
+        else
+            TechWorkloadUserClient(username, userManager, techWM, requestManager, inboxManager)
+    }
 }

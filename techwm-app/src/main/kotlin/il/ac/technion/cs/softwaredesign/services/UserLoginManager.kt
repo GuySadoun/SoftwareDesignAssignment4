@@ -1,17 +1,18 @@
 package il.ac.technion.cs.softwaredesign.services
 
 import com.google.common.collect.ImmutableList
+import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.PermissionLevel
 import il.ac.technion.cs.softwaredesign.services.database.DbUserLoginHandler
 import java.util.concurrent.CompletableFuture
 
-class UserLoginManager (private val mDbUserInfoHandler: DbUserLoginHandler) {
-    fun isUsernameLoggedIn(username: String): CompletableFuture<Boolean> {
-        return mDbUserInfoHandler.isUserLoggedIn(username)
+class UserLoginManager @Inject constructor(private val mDbUserInfoHandler: DbUserLoginHandler) {
+    fun getUsernameTokenIfLoggedIn(username: String): CompletableFuture<String> {
+        return mDbUserInfoHandler.getUsernameTokenIfLoggedIn(username)
     }
 
-    fun loginUser(username: String, permissionLevel: PermissionLevel): CompletableFuture<Unit> {
-        return mDbUserInfoHandler.login(username, permissionLevel)
+    fun loginUser(username: String, permissionLevel: PermissionLevel, token: String): CompletableFuture<Unit> {
+        return mDbUserInfoHandler.login(username, permissionLevel, token)
     }
 
     fun logoutUser(username: String, permissionLevel: PermissionLevel): CompletableFuture<Unit> {

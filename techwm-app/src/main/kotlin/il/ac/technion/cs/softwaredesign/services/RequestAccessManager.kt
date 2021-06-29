@@ -2,7 +2,6 @@ package il.ac.technion.cs.softwaredesign.services
 
 import com.google.common.collect.ImmutableList
 import com.google.inject.Inject
-import il.ac.technion.cs.softwaredesign.AccessRequest
 import il.ac.technion.cs.softwaredesign.services.database.DbRequestAccessHandler
 import java.util.concurrent.CompletableFuture
 

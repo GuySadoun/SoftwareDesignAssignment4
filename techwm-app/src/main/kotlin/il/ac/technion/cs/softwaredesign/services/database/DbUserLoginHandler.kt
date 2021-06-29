@@ -12,6 +12,7 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactory) {
         const val SerialToLoggedInUsernameSuffix = "_serialToLoggedInUsername"
         const val UsernameToIsLoggedInSuffix = "_usernameToIsLoggedIn"
         const val UsernameToSerialNumberSuffix = "_usernameToSerialNumber"
+        const val UsernameToTokenSuffix = "_usernameToToken"
 
         const val nonEmptyPrefix = "_"
         const val loggedInSymbol = "1"
@@ -25,7 +26,7 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactory) {
         )
     }
 
-    fun login(username: String, permissionLevel: PermissionLevel): CompletableFuture<Unit> {
+    fun login(username: String, permissionLevel: PermissionLevel, token: String): CompletableFuture<Unit> {
         return dbUsernameToLoginStateHandler.thenCompose { storage ->
             storage.write(username + UsernameToIsLoggedInSuffix, loggedInSymbol)
                 .thenCompose {
@@ -47,13 +48,23 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactory) {
                                             username + UsernameToSerialNumberSuffix,
                                             serialNumber.toString()
                                         )
+                                    }.thenCompose {
+                                        storage.write(
+                                            username + UsernameToTokenSuffix,
+                                            token
+                                        )
                                     }
                                 }
                         } else {
                             storage.write(
                                 serial.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(),
                                 username
-                            )
+                            ).thenCompose {
+                                storage.write(
+                                    username + UsernameToTokenSuffix,
+                                    token
+                                )
+                            }
                         }
                     }
                 }
@@ -68,16 +79,22 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactory) {
                     storage.read(username + UsernameToSerialNumberSuffix)
                         .thenCompose { serialNumber ->
                             storage.delete(serialNumber + SerialToLoggedInUsernameSuffix + permissionLevel.toString())
-                                .thenApply { if (!it) throw IllegalArgumentException() }
+                                .thenApply { if (!it) throw IllegalArgumentException() }.thenCompose {
+                                    storage.delete(username + UsernameToTokenSuffix)
+                                        .thenApply { if (!it) throw IllegalArgumentException() }
+                                }
                         }
                 }
         }
     }
 
-    fun isUserLoggedIn(username: String): CompletableFuture<Boolean> {
+    fun getUsernameTokenIfLoggedIn(username: String): CompletableFuture<String> {
         return dbUsernameToLoginStateHandler.thenCompose { usernameToUserStorage ->
-            usernameToUserStorage.read(username + UsernameToIsLoggedInSuffix).thenApply { state ->
-                state == loggedInSymbol
+            usernameToUserStorage.read(username + UsernameToIsLoggedInSuffix).thenCompose { state ->
+                if (state == loggedInSymbol)
+                    usernameToUserStorage.read(username + UsernameToTokenSuffix)
+                else
+                    CompletableFuture.completedFuture(null)
             }
         }
     }

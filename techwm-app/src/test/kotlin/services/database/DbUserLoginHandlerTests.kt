@@ -20,6 +20,8 @@ class DbUserLoginHandlerTests {
 
     private val username1 = "username1"
     private val username2 = "username2"
+    private val token1 = "token1"
+    private val token2 = "token2"
 
     @BeforeEach
     fun configureAndClearDoubles() {
@@ -35,12 +37,12 @@ class DbUserLoginHandlerTests {
             val userLoginHandler = DbUserLoginHandler(dbFactoryMock)
 
             // Act
-            userLoginHandler.login(username1, PermissionLevel.USER).join()
-            userLoginHandler.login(username2, PermissionLevel.OPERATOR).join()
+            userLoginHandler.login(username1, PermissionLevel.USER, token1).join()
+            userLoginHandler.login(username2, PermissionLevel.OPERATOR, token2).join()
 
             // Assert
-            Assertions.assertTrue(userLoginHandler.isUserLoggedIn(username1).join())
-            Assertions.assertTrue(userLoginHandler.isUserLoggedIn(username2).join())
+            Assertions.assertEquals(token1, userLoginHandler.getUsernameTokenIfLoggedIn(username1).join())
+            Assertions.assertEquals(token2, userLoginHandler.getUsernameTokenIfLoggedIn(username2).join())
         }
 
         @Test
@@ -49,13 +51,13 @@ class DbUserLoginHandlerTests {
             val userLoginHandler = DbUserLoginHandler(dbFactoryMock)
 
             // Act
-            userLoginHandler.login(username1, PermissionLevel.USER).join()
+            userLoginHandler.login(username1, PermissionLevel.USER, token1).join()
 
             // Assert
             Assertions.assertDoesNotThrow {
-                userLoginHandler.login(username1, PermissionLevel.USER).join()
+                userLoginHandler.login(username1, PermissionLevel.USER, token2).join()
             }
-            Assertions.assertTrue(userLoginHandler.isUserLoggedIn(username1).join())
+            Assertions.assertEquals(token2, userLoginHandler.getUsernameTokenIfLoggedIn(username1).join())
         }
 
         @Test
@@ -64,10 +66,10 @@ class DbUserLoginHandlerTests {
             val userLoginHandler = DbUserLoginHandler(dbFactoryMock)
 
             // Act
-            userLoginHandler.login("", PermissionLevel.USER).join()
+            userLoginHandler.login("", PermissionLevel.USER, token1).join()
 
             // Assert
-            Assertions.assertTrue(userLoginHandler.isUserLoggedIn("").join())
+            Assertions.assertEquals(token1, userLoginHandler.getUsernameTokenIfLoggedIn("").join())
         }
 
         @Test
@@ -76,14 +78,14 @@ class DbUserLoginHandlerTests {
             val userLoginHandler = DbUserLoginHandler(dbFactoryMock)
 
             // Act
-            userLoginHandler.login(username1, PermissionLevel.USER).join()
-            userLoginHandler.login(username2, PermissionLevel.USER).join()
+            userLoginHandler.login(username1, PermissionLevel.USER, token1).join()
+            userLoginHandler.login(username2, PermissionLevel.USER, token1).join()
             userLoginHandler.logout(username1, PermissionLevel.USER).join()
             userLoginHandler.logout(username2, PermissionLevel.USER).join()
 
             // Assert
-            Assertions.assertFalse(userLoginHandler.isUserLoggedIn(username1).join())
-            Assertions.assertFalse(userLoginHandler.isUserLoggedIn(username2).join())
+            Assertions.assertNull(userLoginHandler.getUsernameTokenIfLoggedIn(username1).join())
+            Assertions.assertNull(userLoginHandler.getUsernameTokenIfLoggedIn(username2).join())
         }
 
         @Test
@@ -105,7 +107,7 @@ class DbUserLoginHandlerTests {
             val userLoginHandler = DbUserLoginHandler(dbFactoryMock)
 
             // Act
-            userLoginHandler.login(username1, PermissionLevel.USER).join()
+            userLoginHandler.login(username1, PermissionLevel.USER, token1).join()
             userLoginHandler.logout(username1, PermissionLevel.USER).join()
 
             // Assert
@@ -124,9 +126,9 @@ class DbUserLoginHandlerTests {
 
         // Act & Assert
         val firstSerial = userLoginHandler.getNextSerialNumber().join()
-        userLoginHandler.login(username1, PermissionLevel.USER).join()
+        userLoginHandler.login(username1, PermissionLevel.USER, token1).join()
         val secondSerial = userLoginHandler.getNextSerialNumber().join()
-        userLoginHandler.login(username2, PermissionLevel.USER).join()
+        userLoginHandler.login(username2, PermissionLevel.USER,token1).join()
         userLoginHandler.logout(username1, PermissionLevel.USER).join()
         val thirdSerial = userLoginHandler.getNextSerialNumber().join()
 
@@ -138,15 +140,15 @@ class DbUserLoginHandlerTests {
     }
 
     @Test
-    fun `isUserLoggerIn returns false for non-existing user`() {
+    fun `getUsernameTokenIfLoggedIn returns null for non-existing user`() {
         // Arrange
         val userLoginHandler = DbUserLoginHandler(dbFactoryMock)
 
         // Act & Assert
-        val actual = userLoginHandler.isUserLoggedIn("non-existing").join()
+        val actual = userLoginHandler.getUsernameTokenIfLoggedIn("non-existing").join()
 
         // Assert
-        Assertions.assertFalse(actual)
+        Assertions.assertNull(actual)
     }
 
     @Nested
@@ -157,7 +159,7 @@ class DbUserLoginHandlerTests {
             val userLoginHandler = DbUserLoginHandler(dbFactoryMock)
 
             // Act
-            userLoginHandler.login(username1, PermissionLevel.USER).join()
+            userLoginHandler.login(username1, PermissionLevel.USER, token1).join()
             userLoginHandler.logout(username1, PermissionLevel.USER).join()
             val actual = userLoginHandler.getUsernameBySerialNumIfOnline(0, PermissionLevel.USER).join()
 
@@ -171,7 +173,7 @@ class DbUserLoginHandlerTests {
             val userLoginHandler = DbUserLoginHandler(dbFactoryMock)
 
             // Act
-            userLoginHandler.login(username1, PermissionLevel.USER).join()
+            userLoginHandler.login(username1, PermissionLevel.USER, token1).join()
             val actual = userLoginHandler.getUsernameBySerialNumIfOnline(0, PermissionLevel.USER).join()
 
             // Assert

@@ -1,12 +1,13 @@
 package il.ac.technion.cs.softwaredesign.services
 
 import com.google.common.collect.ImmutableList
+import com.google.inject.Inject
 import il.ac.technion.cs.softwaredesign.Inbox
 import il.ac.technion.cs.softwaredesign.Message
 import il.ac.technion.cs.softwaredesign.services.database.DbInboxHandler
 import java.util.concurrent.CompletableFuture
 
-class InboxManager(private val dbInboxHandler: DbInboxHandler) {
+class InboxManager @Inject constructor(private val dbInboxHandler: DbInboxHandler) {
     fun addMessageToConversation(from: String, to: String, message: String) : CompletableFuture<Unit> {
         return dbInboxHandler.addMessage(from, to, message)
     }
