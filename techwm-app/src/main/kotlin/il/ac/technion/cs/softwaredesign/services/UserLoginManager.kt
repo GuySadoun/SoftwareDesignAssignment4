@@ -5,7 +5,7 @@ import il.ac.technion.cs.softwaredesign.PermissionLevel
 import il.ac.technion.cs.softwaredesign.services.database.DbUserLoginHandler
 import java.util.concurrent.CompletableFuture
 
-class   UserLoginManager (private val mDbUserInfoHandler: DbUserLoginHandler) {
+class UserLoginManager (private val mDbUserInfoHandler: DbUserLoginHandler) {
     fun isUsernameLoggedIn(username: String): CompletableFuture<Boolean> {
         return mDbUserInfoHandler.isUserLoggedIn(username)
     }

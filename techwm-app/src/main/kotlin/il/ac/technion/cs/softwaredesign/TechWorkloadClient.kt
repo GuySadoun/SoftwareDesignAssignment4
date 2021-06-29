@@ -35,12 +35,15 @@ interface AccessRequest {
  * This is the main class implementing TechWM Clients, the client layer interacting with the TechWM application.
  */
 open class TechWorkloadUserClient(
-    protected val username : String,
+    protected val username: String,
     protected val userManager: UserLoginManager,
-    protected val techWM : TechWorkloadManager,
+    protected val techWM: TechWorkloadManager,
     protected val requestManager: RequestAccessManager,
-    protected val inboxManager: InboxManager) {
-    protected var connectedToken : String? = null
+    protected val inboxManager: InboxManager
+) {
+
+    internal var connectedToken: String? = null
+
     /**
      * Login with a given password. A successfully logged-in user is considered "online". If the user is already
      * logged in, this is a no-op.
@@ -50,18 +53,21 @@ open class TechWorkloadUserClient(
      * @throws IllegalArgumentException If the password was wrong or the user is not yet registered.
      */
     fun login(password: String): CompletableFuture<Unit> {
-        return techWM.authenticate(username, password).thenApply { token ->
-            connectedToken = token
-            techWM.userInformation(connectedToken!!, username)
-                .thenCompose { userInformation ->
-                    userManager.loginUser(username, userInformation!!.permissionLevel)
+        return techWM.authenticate(username, password).thenApply { token -> connectedToken = token }
+            .thenCompose { techWM.userInformation(connectedToken!!, username) }
+            .thenCompose { userInformation ->
+                userManager.loginUser(username, userInformation!!.permissionLevel)
+            }.handle { _, e ->
+                if (e != null) {
+                    throw IllegalArgumentException()
                 }
-        }.handle { _, e ->
-            if (e != null){
-                throw IllegalArgumentException()
             }
-        }
     }
+
+    // open client
+    // login
+    // close client
+    // open client
 
     /**
      * Log out of the system. After logging out, a user is no longer considered online.
@@ -72,14 +78,13 @@ open class TechWorkloadUserClient(
      */
     fun logout(): CompletableFuture<Unit> {
         return userManager.isUsernameLoggedIn(username).thenCompose { isLoggedIn ->
-            if (isLoggedIn){
+            if (isLoggedIn) {
                 techWM.userInformation(connectedToken!!, username)
                     .thenCompose { userInformation ->
                         userManager.logoutUser(username, userInformation!!.permissionLevel)
                             .thenApply { connectedToken = null }
                     }
-            }
-            else throw IllegalArgumentException()
+            } else throw IllegalArgumentException()
         }
     }
 
@@ -98,8 +103,7 @@ open class TechWorkloadUserClient(
                     if (e != null) throw IllegalArgumentException()
                     else res
                 }
-            }
-            else throw PermissionException()
+            } else throw PermissionException()
         }
     }
 
@@ -169,11 +173,11 @@ open class TechWorkloadUserClient(
                 throw PermissionException()
             else
                 techWM.userInformation(connectedToken!!, toUsername).thenCompose { user ->
-                if (user == null || message.length > 120)
-                    throw IllegalArgumentException()
-                else
-                    inboxManager.addMessageToConversation(username, toUsername, message)
-            }
+                    if (user == null || message.length > 120)
+                        throw IllegalArgumentException()
+                    else
+                        inboxManager.addMessageToConversation(username, toUsername, message)
+                }
         }
     }
 
@@ -201,11 +205,12 @@ open class TechWorkloadUserClient(
 }
 
 class TechWorkloadAdminClient(
-    username : String,
-    techWM : TechWorkloadManager,
+    username: String,
+    techWM: TechWorkloadManager,
     userManager: UserLoginManager,
     requestManager: RequestAccessManager,
-    inboxManager: InboxManager): TechWorkloadUserClient(username,  userManager, techWM, requestManager, inboxManager) {
+    inboxManager: InboxManager
+) : TechWorkloadUserClient(username, userManager, techWM, requestManager, inboxManager) {
     /**
      * View all access requests in the system.
      *
@@ -221,7 +226,8 @@ class TechWorkloadAdminClient(
                         AccessRequestImpl(
                             reqInfo.first/*username*/,
                             reqInfo.second/*reason*/,
-                            techWM, requestManager, connectedToken!!)
+                            techWM, requestManager, connectedToken!!
+                        )
                     }
                 }
             } else {
