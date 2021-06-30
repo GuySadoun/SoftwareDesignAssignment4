@@ -51,14 +51,18 @@ open class TechWorkloadUserClient (
      * @throws IllegalArgumentException If the password was wrong or the user is not yet registered.
      */
     fun login(password: String): CompletableFuture<Unit> {
-        return techWM.authenticate(username, password).thenCompose { token ->
-                techWM.userInformation(token, username).thenCompose { userInformation ->
-                    userManager.loginUser(username, userInformation!!.permissionLevel, token) }
+        return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
+            if (token != null) CompletableFuture.completedFuture(Unit)
+            else techWM.authenticate(username, password).thenCompose { newToken ->
+                techWM.userInformation(newToken, username).thenCompose { userInformation ->
+                    userManager.loginUser(username, userInformation!!.permissionLevel, newToken)
+                }
             }.handle { _, e ->
                 if (e != null) {
                     throw IllegalArgumentException()
                 }
             }
+        }
     }
 
     /**

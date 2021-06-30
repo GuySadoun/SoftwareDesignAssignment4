@@ -28,38 +28,21 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactory) {
 
     fun login(username: String, permissionLevel: PermissionLevel, token: String): CompletableFuture<Unit> {
         return dbUsernameToLoginStateHandler.thenCompose { storage ->
+
             storage.write(username + UsernameToIsLoggedInSuffix, loggedInSymbol)
-                .thenCompose {
-                    storage.read(username + UsernameToSerialNumberSuffix).thenCompose { serial ->
-                        if (serial == null) {
-                            storage.read(SerialToLoggedInUsernameSuffix + dbSizeKey)
-                                .thenCompose { size ->
+                .thenCompose { storage.read(username + UsernameToSerialNumberSuffix) }
+                .thenCompose { serial ->
+                        if (serial == null)
+                            storage.read(SerialToLoggedInUsernameSuffix + dbSizeKey).thenCompose { size ->
                                     val serialNumber: Int = size?.toInt() ?: 0
-                                    storage.write(
-                                        serialNumber.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(),
-                                        nonEmptyPrefix + username
-                                    ).thenCompose {
-                                        storage.write(
-                                            SerialToLoggedInUsernameSuffix + dbSizeKey,
-                                            (serialNumber + 1).toString()
-                                        )
-                                    }.thenCompose {
-                                        storage.write(
-                                            username + UsernameToSerialNumberSuffix,
-                                            serialNumber.toString()
-                                        )
-                                    }.thenCompose {
-                                        storage.write(
-                                            username + UsernameToTokenSuffix,
-                                            token
-                                        )
-                                    }
-                                }
-                        } else {
+                                    storage.write(serialNumber.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(), nonEmptyPrefix + username)
+                                        .thenCompose { storage.write(SerialToLoggedInUsernameSuffix + dbSizeKey, (serialNumber + 1).toString()) }
+                                        .thenCompose { storage.write(username + UsernameToSerialNumberSuffix, serialNumber.toString())}
+                                        .thenCompose { storage.write(username + UsernameToTokenSuffix, token) }
+                            }
+                        else
                             storage.write(serial.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(), nonEmptyPrefix + username)
                                 .thenCompose { storage.write( username + UsernameToTokenSuffix, token) }
-                        }
-                    }
                 }
         }
     }
