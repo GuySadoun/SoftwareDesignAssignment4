@@ -60,12 +60,14 @@ class StorageImpl<DataEntry> @Inject constructor(private val serializer: Seriali
     }
 
     override fun write(key: String, dataEntry: DataEntry): CompletableFuture<Unit> {
-        return create(key, dataEntry).thenApply { created ->
+        return create(key, dataEntry).thenCompose { created ->
             if (!created) {
                 update(key, dataEntry).thenApply { updated ->
                     if (!updated) throw Exception("Should not be thrown")
                 }
             }
+            else
+                CompletableFuture.completedFuture(Unit)
         }
     }
 }
