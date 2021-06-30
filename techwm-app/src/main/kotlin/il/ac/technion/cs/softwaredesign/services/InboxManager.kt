@@ -22,7 +22,7 @@ class InboxManager @Inject constructor(private val dbInboxHandler: DbInboxHandle
 
     fun getUserInbox(username: String): CompletableFuture<Inbox> {
         return getMessagesOfUser(username).thenApply { messagesList ->
-            messagesList.groupBy { x -> x.fromUser}
+            messagesList.asReversed().groupBy { x -> x.fromUser}
         }
     }
 
