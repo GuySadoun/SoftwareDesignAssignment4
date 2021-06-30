@@ -68,10 +68,30 @@ class TechWorkloadClientStaffTest {
     fun `first test`() {
         manager.register("", "admin", "123456", PermissionLevel.USER).join()
 
-        val admin = clientFactory.get("admin") as TechWorkloadAdminClient
 
+
+        val admin = clientFactory.get("admin") as TechWorkloadAdminClient
+        val john = clientFactory.get("john")
+        val guy = clientFactory.get("guy")
+        val dec = clientFactory.get("dec")
+        john.requestAccessToSystem("john", "p", "reason").join()
+        guy.requestAccessToSystem("guy", "p", "reason").join()
+        dec.requestAccessToSystem("dec", "p", "reason").join()
         admin.login("123456").join()
-        admin.login("123456").join()
+        admin.accessRequests().join().forEach { it.approve().join() }
+
+        john.login("p").join()
+        guy.login("p").join()
+
+
+        admin.sendMessage("guy", "adminToGuy").join()
+        admin.sendMessage("guy", "adminToGuy2").join()
+        john.sendMessage("guy", "johnToGuy").join()
+        guy.sendMessage("john", "GuyToJohn").join()
+        guy.sendMessage("guy", "GuyToGuy").join()
+        println(guy.inbox().join()["john"])
+        println(john.inbox().join())
+
         admin.logout().join()
     }
 }

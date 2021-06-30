@@ -9,15 +9,5 @@ class DbDirectoriesPaths {
         const val UsersDbPath = "UsernameToUser_"
         const val AccessRequests = "AccessRequest_"
         const val Inbox = "Inbox"
-
-        const val UsernameToPassword = "UsernameToPassword_"
-        const val UsernameToUser = "UsernameToUser_"
-        const val UsernameToToken = "UsernameToToken_"
-        const val TokenToUsername = "TokenToUsername_"
-        const val DeletedTokens = "DeletedTokens_"
-        const val SerialNumberToId = "SerialNumberToId_"
-        const val IdToResourceName = "IdToResourceName_"
-        const val UsernameIsRevoked = "IsUserNameRevoked_"
-        const val JobIdToJobInfo = "JobIdToJobInfo_"
     }
 }
