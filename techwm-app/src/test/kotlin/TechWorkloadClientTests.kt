@@ -39,6 +39,9 @@ class TechWorkloadClientTests {
             every { techWorkloadManagerMock.userInformation(any(), any()) } returns CompletableFuture.completedFuture(
                 User(username, AccountType.DEFAULT, userPermissionLevel)
             )
+            every { userManagerMock.getUsernameTokenIfLoggedIn(any()) } returns CompletableFuture.completedFuture(null)
+
+            client.login(password).join()
 
             // Act & Assert
             Assertions.assertDoesNotThrow { client.login(password).join() }
@@ -53,7 +56,14 @@ class TechWorkloadClientTests {
             every { techWorkloadManagerMock.userInformation(any(), any()) } returns CompletableFuture.completedFuture(
                 User(username, AccountType.DEFAULT, userPermissionLevel)
             )
+            every { userManagerMock.getUsernameTokenIfLoggedIn(any()) } returnsMany
+                    listOf(
+                        CompletableFuture.completedFuture(null),
+                        CompletableFuture.completedFuture(token))
+
             client.login(password).join()
+
+
 
             // Act & Assert
             Assertions.assertDoesNotThrow { client.login(password).join() }
@@ -65,6 +75,7 @@ class TechWorkloadClientTests {
             // Arrange
             val client = TechWorkloadUserClient(username, userManagerMock, techWorkloadManagerMock, requestManagerMock, inboxManagerMock)
             every { techWorkloadManagerMock.authenticate(any(), any()) } returns CompletableFuture.failedFuture(Exception())
+            every { userManagerMock.getUsernameTokenIfLoggedIn(any()) } returns CompletableFuture.completedFuture(null)
 
             // Act & Assert
             val throwable = assertThrows<CompletionException> {
