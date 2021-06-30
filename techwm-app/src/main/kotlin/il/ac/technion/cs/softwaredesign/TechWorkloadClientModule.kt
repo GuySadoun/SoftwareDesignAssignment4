@@ -11,10 +11,12 @@ import il.ac.technion.cs.softwaredesign.services.database.DbRequestAccessHandler
 import il.ac.technion.cs.softwaredesign.services.database.DbUserLoginHandler
 import il.ac.technion.cs.softwaredesign.storage.SecureStorageModule
 import main.kotlin.StorageFactory
+import main.kotlin.StorageFactoryImpl
 
 class TechWorkloadClientModule: KotlinModule() {
     override fun configure() {
         bind<TechWorkloadClientFactory>().to<TechWorkloadClientFactoryImpl>().`in`<Singleton>()
+        bind<StorageFactory>().to<StorageFactoryImpl>().`in`<Singleton>()
 
         bind<DbInboxHandler>().`in`<Singleton>()
         bind<DbRequestAccessHandler>().`in`<Singleton>()
