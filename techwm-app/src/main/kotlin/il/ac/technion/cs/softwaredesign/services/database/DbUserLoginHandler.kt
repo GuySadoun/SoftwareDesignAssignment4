@@ -56,15 +56,8 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactory) {
                                     }
                                 }
                         } else {
-                            storage.write(
-                                serial.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(),
-                                username
-                            ).thenCompose {
-                                storage.write(
-                                    username + UsernameToTokenSuffix,
-                                    token
-                                )
-                            }
+                            storage.write(serial.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString(), nonEmptyPrefix + username)
+                                .thenCompose { storage.write( username + UsernameToTokenSuffix, token) }
                         }
                     }
                 }
@@ -108,9 +101,7 @@ class DbUserLoginHandler @Inject constructor(databaseFactory: StorageFactory) {
     fun getUsernameBySerialNumIfOnline(serial: Int, permissionLevel: PermissionLevel): CompletableFuture<String?> {
         return dbUsernameToLoginStateHandler.thenCompose { storage ->
             storage.read(serial.toString() + SerialToLoggedInUsernameSuffix + permissionLevel.toString())
-                .thenApply { username ->
-                    username?.drop(nonEmptyPrefix.length)
-                }
+                .thenApply { username -> username?.drop(nonEmptyPrefix.length) }
         }
     }
 }

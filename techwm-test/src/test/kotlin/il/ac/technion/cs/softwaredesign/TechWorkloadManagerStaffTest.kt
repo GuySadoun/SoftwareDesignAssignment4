@@ -14,7 +14,7 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 
 class TechWorkloadManagerStaffTest {
-    private val injector = Guice.createInjector(TechWorkloadManagerModule())
+    private val injector = Guice.createInjector(TechWorkloadManagerModuleTests())
     private val manager = injector.getInstance<TechWorkloadManager>()
 
     private fun registerFirstUser(): CompletableFuture<Pair<String, String>> {

@@ -63,4 +63,15 @@ class TechWorkloadClientStaffTest {
             }
             .join()
     }
+
+    @Test
+    fun `first test`() {
+        manager.register("", "admin", "123456", PermissionLevel.USER).join()
+
+        val admin = clientFactory.get("admin") as TechWorkloadAdminClient
+
+        admin.login("123456").join()
+        admin.login("123456").join()
+        admin.logout().join()
+    }
 }

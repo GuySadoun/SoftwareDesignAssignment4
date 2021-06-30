@@ -51,23 +51,15 @@ open class TechWorkloadUserClient (
      * @throws IllegalArgumentException If the password was wrong or the user is not yet registered.
      */
     fun login(password: String): CompletableFuture<Unit> {
-        return techWM.authenticate(username, password)
-            .thenCompose { token ->
-                techWM.userInformation(token, username)
-                    .thenCompose { userInformation ->
-                        userManager.loginUser(username, userInformation!!.permissionLevel, token)
-                    }
+        return techWM.authenticate(username, password).thenCompose { token ->
+                techWM.userInformation(token, username).thenCompose { userInformation ->
+                    userManager.loginUser(username, userInformation!!.permissionLevel, token) }
             }.handle { _, e ->
                 if (e != null) {
                     throw IllegalArgumentException()
                 }
             }
     }
-
-    // open client
-    // login
-    // close client
-    // open client
 
     /**
      * Log out of the system. After logging out, a user is no longer considered online.
