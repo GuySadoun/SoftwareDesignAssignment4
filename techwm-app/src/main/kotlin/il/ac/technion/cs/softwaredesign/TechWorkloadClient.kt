@@ -94,7 +94,7 @@ open class TechWorkloadUserClient (
     fun submitJob(jobName: String, resources: List<String>): CompletableFuture<AllocatedJob> {
         return userManager.getUsernameTokenIfLoggedIn(username).thenCompose { token ->
             if (token != null) {
-                techWM.submitJob(username, jobName, resources).handle { res, e ->
+                techWM.submitJob(token, jobName, resources).handle { res, e ->
                     if (e != null) throw IllegalArgumentException()
                     else res
                 }

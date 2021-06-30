@@ -13,7 +13,7 @@ class InboxManager @Inject constructor(private val dbInboxHandler: DbInboxHandle
     }
 
     fun isMsgWithIdExist(to: String, id: String) : CompletableFuture<Boolean> {
-        return dbInboxHandler.getMessageById(to, id).thenApply { it == null }
+        return dbInboxHandler.getMessageById(to, id).thenApply { it != null }
     }
 
     fun deleteMsg(username: String, id: String) : CompletableFuture<Unit> {
