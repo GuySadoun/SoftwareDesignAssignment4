@@ -27,7 +27,6 @@ class TechWorkloadClientModule: KotlinModule() {
         bind<UserLoginManager>().`in`<Singleton>()
 
         install(TechWorkloadManagerModule())
-
         install(SecureStorageModule())
         install(ExecutionServiceModule())
     }
