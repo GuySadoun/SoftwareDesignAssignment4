@@ -1,8 +1,8 @@
-# TechWM • Assignment 4
+# TechWM • Workload Manager implemenatation with futures
 
 ## Authors
-* Firstname McLastname, ID number
-* Firstnamey Lastnameson, ID number
+* Guy Sadoun
+* Lior Swissa
 
 ## Notes
 
